@@ -9,6 +9,10 @@ import { LLMService } from './llm/llm.service';
 import { AuthModule } from './auth/auth.module';
 import { TopicSourceService } from './topic-sources/topic-source.service';
 import { RedditTopicSourceService } from './topic-sources/reddit-topic-source.service';
+import { ProfileService } from './services/profile.service';
+import { ConversationService } from './services/conversation.service';
+import { ProfileController } from './controllers/profile.controller';
+import { ConversationController } from './controllers/conversation.controller';
 
 @Module({
   imports: [
@@ -30,7 +34,14 @@ import { RedditTopicSourceService } from './topic-sources/reddit-topic-source.se
     TypeOrmModule.forFeature([User, UserProfile, Conversation, Content]),
     AuthModule,
   ],
-  providers: [LLMService, TopicSourceService, RedditTopicSourceService],
+  controllers: [ProfileController, ConversationController],
+  providers: [
+    LLMService,
+    TopicSourceService,
+    RedditTopicSourceService,
+    ProfileService,
+    ConversationService,
+  ],
   exports: [LLMService, TopicSourceService],
 })
 export class AppModule {}
