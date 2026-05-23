@@ -2,10 +2,15 @@ import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { RefreshTokenDto } from '../dto/auth.dto';
+import { GoogleMobileAuthDto } from '../dto/google-mobile.dto';
+import { GoogleTokenService } from './google-token.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly googleTokenService: GoogleTokenService,
+  ) {}
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
@@ -45,5 +50,23 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt'))
   logout(@Req() req: { user: { userId: string } }) {
     return this.authService.logout(req.user.userId);
+  }
+
+  @Post('google/mobile')
+  async googleMobile(@Body() body: GoogleMobileAuthDto) {
+    const profile = await this.googleTokenService.verifyIdToken(body.idToken);
+    const user = await this.authService.validateGoogleUser(profile);
+    const tokens = await this.authService.issueTokens(user);
+    return {
+      access_token: tokens.accessToken,
+      refresh_token: tokens.refreshToken,
+      token_type: 'Bearer',
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+    };
   }
 }
