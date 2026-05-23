@@ -5,32 +5,32 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 
 @Index(['interest', 'createdAt'])
 export class Content {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column()
-  url: string; // Unique URL of the content
+  url!: string; // Unique URL of the content
 
   @Column()
-  title: string;
+  title!: string;
 
   @Column('text')
-  summary: string; // Brief summary of content
+  summary!: string; // Brief summary of content
 
   @Column()
-  interest: string; // Which interest category this belongs to
+  interest!: string; // Which interest category this belongs to
 
   @Column('simple-array', { nullable: true })
-  tags: string[];
+  tags!: string[];
 
   @Column({ nullable: true })
-  source: string; // e.g., 'sports.com', 'bbc.com'
+  source!: string; // e.g., 'sports.com', 'bbc.com'
 
   @Column({ type: 'timestamp', nullable: true })
-  publishedAt: Date;
+  publishedAt!: Date;
 
   @CreateDateColumn()
-  discoveredAt: Date;
+  discoveredAt!: Date;
 
   @Column({ type: 'boolean', default: false })
-  processed: boolean; // Whether conversations have been generated from this
+  processed!: boolean; // Whether conversations have been generated from this
 }

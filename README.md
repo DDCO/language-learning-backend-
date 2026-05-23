@@ -79,7 +79,7 @@ npm start
    - Conversation initiation
    - Notification delivery
 
-4. **Authentication** - Implement JWT-based auth
+4. **Authentication** - Extend auth (Google OAuth + JWT is scaffolded)
 
 ## Environment Variables
 
@@ -87,5 +87,32 @@ npm start
 - `LLM_PROVIDER` - Currently supports: `openai`
 - `OPENAI_API_KEY`, `OPENAI_MODEL`
 - `JWT_SECRET`, `JWT_EXPIRATION`
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`
+- `REDDIT_DEFAULT_SUBREDDITS` (comma-separated, e.g. `languagelearning,technology,worldnews`)
 - `PORT` - Server port (default: 3000)
 - `NODE_ENV` - `development` or `production`
+
+## Topic Source Abstraction
+
+Profiles can now merge direct interests with source-based topics.
+
+Example profile payload shape:
+
+```json
+{
+  "targetLanguage": "Portuguese",
+  "interests": ["football", "history"],
+  "topicSources": [
+    { "source": "reddit", "items": ["languagelearning", "soccer"] }
+  ]
+}
+```
+
+Resolved topics from Reddit are normalized as `reddit:r/<subreddit>` and merged into `interests`.
+
+## Google OAuth (JWT)
+
+Endpoints:
+- `GET /auth/google` - Starts Google OAuth flow
+- `GET /auth/google/callback` - Returns `{ access_token, token_type, user }`
+- `GET /auth/me` - Protected route using `Authorization: Bearer <token>`

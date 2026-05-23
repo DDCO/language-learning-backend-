@@ -6,6 +6,9 @@ import { UserProfile } from './entities/user-profile.entity';
 import { Conversation } from './entities/conversation.entity';
 import { Content } from './entities/content.entity';
 import { LLMService } from './llm/llm.service';
+import { AuthModule } from './auth/auth.module';
+import { TopicSourceService } from './topic-sources/topic-source.service';
+import { RedditTopicSourceService } from './topic-sources/reddit-topic-source.service';
 
 @Module({
   imports: [
@@ -25,8 +28,9 @@ import { LLMService } from './llm/llm.service';
       logging: process.env.NODE_ENV === 'development',
     }),
     TypeOrmModule.forFeature([User, UserProfile, Conversation, Content]),
+    AuthModule,
   ],
-  providers: [LLMService],
-  exports: [LLMService],
+  providers: [LLMService, TopicSourceService, RedditTopicSourceService],
+  exports: [LLMService, TopicSourceService],
 })
 export class AppModule {}

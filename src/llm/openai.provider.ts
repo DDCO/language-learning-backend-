@@ -9,7 +9,7 @@ export class OpenAIProvider implements LLMProvider {
   private baseUrl = 'https://api.openai.com/v1';
 
   constructor() {
-    this.apiKey = process.env.OPENAI_API_KEY;
+    this.apiKey = process.env.OPENAI_API_KEY || '';
     this.model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
   }
 
@@ -40,7 +40,8 @@ export class OpenAIProvider implements LLMProvider {
         tokensUsed: response.data.usage?.total_tokens,
       };
     } catch (error) {
-      throw new Error(`OpenAI API error: ${error.message}`);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`OpenAI API error: ${message}`);
     }
   }
 

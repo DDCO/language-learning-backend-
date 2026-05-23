@@ -116,9 +116,15 @@ Respond only in ${targetLanguage}.`;
    * Get a specific conversation
    */
   async getConversation(conversationId: string): Promise<Conversation> {
-    return this.conversationRepo.findOne({
+    const conversation = await this.conversationRepo.findOne({
       where: { id: conversationId },
     });
+
+    if (!conversation) {
+      throw new Error('Conversation not found');
+    }
+
+    return conversation;
   }
 
   /**

@@ -5,29 +5,32 @@ import { Conversation } from './conversation.entity';
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ unique: true })
-  email: string;
+  email!: string;
+
+  @Column({ nullable: true })
+  password!: string | null; // Should be hashed if local auth is used
+
+  @Column({ unique: true, nullable: true })
+  googleId!: string | null;
 
   @Column()
-  password: string; // Should be hashed
+  firstName!: string;
 
   @Column()
-  firstName: string;
-
-  @Column()
-  lastName: string;
+  lastName!: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @OneToMany(() => UserProfile, (profile) => profile.user)
-  profiles: UserProfile[];
+  profiles!: UserProfile[];
 
   @OneToMany(() => Conversation, (conversation) => conversation.user)
-  conversations: Conversation[];
+  conversations!: Conversation[];
 }

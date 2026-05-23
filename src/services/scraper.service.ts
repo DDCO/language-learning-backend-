@@ -36,7 +36,8 @@ export class ScraperService {
       
       await this.delay(this.delayMs);
     } catch (error) {
-      console.error(`Error scraping ${interest}:`, error.message);
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Error scraping ${interest}:`, message);
     }
 
     return results;
@@ -57,7 +58,8 @@ export class ScraperService {
       await this.delay(this.delayMs);
       return response.data;
     } catch (error) {
-      console.error(`Error scraping ${url}:`, error.message);
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Error scraping ${url}:`, message);
       return '';
     }
   }

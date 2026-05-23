@@ -2,10 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserProfile } from '../entities/user-profile.entity';
+import { TopicSourceSelection } from '../topic-sources/topic-source.interface';
+import { TopicSourceService } from '../topic-sources/topic-source.service';
 
 export interface CreateProfileDTO {
   targetLanguage: string;
   interests: string[];
+  topicSources?: TopicSourceSelection[];
   interestWeights?: number[];
   checkFrequencyHours?: number;
 }
@@ -15,6 +18,7 @@ export class ProfileService {
   constructor(
     @InjectRepository(UserProfile)
     private profileRepo: Repository<UserProfile>,
+    private readonly topicSourceService: TopicSourceService,
   ) {}
 
   /**
@@ -24,8 +28,14 @@ export class ProfileService {
     userId: string,
     dto: CreateProfileDTO,
   ): Promise<UserProfile> {
-    const { interests, interestWeights } = dto;
+    const sourceTopics = await this.topicSourceService.resolveTopics(dto.topicSources);
+    const interests = [...new Set([...(dto.interests || []), ...sourceTopics])];
+    const { interestWeights } = dto;
     
+    if (interests.length === 0) {
+      throw new Error('At least one interest/topic is required');
+    }
+
     // If no weights provided, distribute equally
     const weights = interestWeights || interests.map(() => 1 / interests.length);
 
@@ -56,6 +66,7 @@ export class ProfileService {
     profileId: string,
     interests: string[],
     weights?: number[],
+    topicSources?: TopicSourceSelection[],
   ): Promise<UserProfile> {
     const profile = await this.profileRepo.findOne({
       where: { id: profileId },
@@ -65,8 +76,15 @@ export class ProfileService {
       throw new Error('Profile not found');
     }
 
-    profile.interests = interests;
-    profile.interestWeights = weights || interests.map(() => 1 / interests.length);
+    const sourceTopics = await this.topicSourceService.resolveTopics(topicSources);
+    const mergedInterests = [...new Set([...(interests || []), ...sourceTopics])];
+
+    profile.interests = mergedInterests;
+    if (mergedInterests.length === 0) {
+      throw new Error('At least one interest/topic is required');
+    }
+
+    profile.interestWeights = weights || mergedInterests.map(() => 1 / mergedInterests.length);
     profile.updatedAt = new Date();
 
     return this.profileRepo.save(profile);

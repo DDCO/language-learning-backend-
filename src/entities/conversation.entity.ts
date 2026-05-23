@@ -11,32 +11,32 @@ export interface Message {
 @Entity('conversations')
 export class Conversation {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column()
-  topic: string; // The topic that triggered this conversation
+  topic!: string; // The topic that triggered this conversation
 
   @Column({ nullable: true })
-  contentSource: string; // URL or source of the news/content
+  contentSource!: string; // URL or source of the news/content
 
   @Column('jsonb')
-  messages: Message[]; // Array of messages in the conversation
+  messages!: Message[]; // Array of messages in the conversation
 
   @Column({ default: 0 })
-  messageCount: number;
+  messageCount!: number;
 
   @Column({ default: 'active' })
-  status: 'active' | 'completed' | 'archived';
+  status!: 'active' | 'completed' | 'archived';
 
   @CreateDateColumn()
-  startedAt: Date;
+  startedAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @ManyToOne(() => User, (user) => user.conversations, { onDelete: 'CASCADE' })
-  user: User;
+  user!: User;
 
   @ManyToOne(() => UserProfile, (profile) => profile.conversations, { onDelete: 'CASCADE' })
-  profile: UserProfile;
+  profile!: UserProfile;
 }
