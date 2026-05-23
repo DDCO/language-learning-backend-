@@ -23,6 +23,9 @@ export class UserProfile {
   @Column({ default: 24 })
   checkFrequencyHours!: number; // How often to check for new content
 
+  @Column({ type: 'timestamp', nullable: true })
+  lastNotifiedAt!: Date | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 
