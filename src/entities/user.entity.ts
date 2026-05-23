@@ -10,13 +10,13 @@ export class User {
   @Column({ unique: true })
   email!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   password!: string | null; // Should be hashed if local auth is used
 
-  @Column({ unique: true, nullable: true })
+  @Column({ type: 'text', unique: true, nullable: true })
   googleId!: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   refreshTokenHash!: string | null;
 
   @Column()
