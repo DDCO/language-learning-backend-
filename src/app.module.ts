@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { User } from './entities/user.entity';
 import { UserProfile } from './entities/user-profile.entity';
 import { Conversation } from './entities/conversation.entity';
@@ -13,6 +14,8 @@ import { ProfileService } from './services/profile.service';
 import { ConversationService } from './services/conversation.service';
 import { ProfileController } from './controllers/profile.controller';
 import { ConversationController } from './controllers/conversation.controller';
+import { ScraperService } from './services/scraper.service';
+import { ContentRefreshJob } from './jobs/content-refresh.job';
 
 @Module({
   imports: [
@@ -20,6 +23,7 @@ import { ConversationController } from './controllers/conversation.controller';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DATABASE_HOST || 'localhost',
@@ -28,8 +32,10 @@ import { ConversationController } from './controllers/conversation.controller';
       password: process.env.DATABASE_PASSWORD || 'postgres',
       database: process.env.DATABASE_NAME || 'language_learning',
       entities: [User, UserProfile, Conversation, Content],
-      synchronize: process.env.NODE_ENV === 'development',
+      synchronize: process.env.TYPEORM_SYNCHRONIZE === 'true',
       logging: process.env.NODE_ENV === 'development',
+      migrations: ['dist/migrations/*.js'],
+      migrationsRun: process.env.TYPEORM_RUN_MIGRATIONS === 'true',
     }),
     TypeOrmModule.forFeature([User, UserProfile, Conversation, Content]),
     AuthModule,
@@ -41,6 +47,8 @@ import { ConversationController } from './controllers/conversation.controller';
     RedditTopicSourceService,
     ProfileService,
     ConversationService,
+    ScraperService,
+    ContentRefreshJob,
   ],
   exports: [LLMService, TopicSourceService],
 })

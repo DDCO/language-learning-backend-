@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConversationService } from '../services/conversation.service';
 import { UserProfile } from '../entities/user-profile.entity';
+import { AddMessageDto, ConversationListQueryDto, StartConversationDto } from '../dto/conversation.dto';
 
 type AuthenticatedRequest = {
   user: {
@@ -24,7 +25,7 @@ export class ConversationController {
   @Post('start')
   async startConversation(
     @Req() req: AuthenticatedRequest,
-    @Body() body: { profileId: string; topic: string; contentSource?: string },
+    @Body() body: StartConversationDto,
   ) {
     const profile = await this.profileRepo.findOne({
       where: { id: body.profileId, user: { id: req.user.userId }, isActive: true },
@@ -32,7 +33,7 @@ export class ConversationController {
     });
 
     if (!profile) {
-      throw new Error('Profile not found');
+      throw new NotFoundException('Profile not found');
     }
 
     return this.conversationService.startConversation(
@@ -45,10 +46,12 @@ export class ConversationController {
 
   @Post(':id/messages')
   addMessage(
+    @Req() req: AuthenticatedRequest,
     @Param('id') conversationId: string,
-    @Body() body: { message: string; targetLanguage: string },
+    @Body() body: AddMessageDto,
   ) {
     return this.conversationService.addMessage(
+      req.user.userId,
       conversationId,
       body.message,
       body.targetLanguage,
@@ -56,17 +59,22 @@ export class ConversationController {
   }
 
   @Get()
-  getMyConversations(@Req() req: AuthenticatedRequest) {
-    return this.conversationService.getUserConversations(req.user.userId);
+  getMyConversations(@Req() req: AuthenticatedRequest, @Query() query: ConversationListQueryDto) {
+    return this.conversationService.getUserConversations(
+      req.user.userId,
+      query.page,
+      query.limit,
+      query.status,
+    );
   }
 
   @Get(':id')
-  getConversation(@Param('id') conversationId: string) {
-    return this.conversationService.getConversation(conversationId);
+  getConversation(@Req() req: AuthenticatedRequest, @Param('id') conversationId: string) {
+    return this.conversationService.getConversation(req.user.userId, conversationId);
   }
 
   @Patch(':id/complete')
-  completeConversation(@Param('id') conversationId: string) {
-    return this.conversationService.completeConversation(conversationId);
+  completeConversation(@Req() req: AuthenticatedRequest, @Param('id') conversationId: string) {
+    return this.conversationService.completeConversation(req.user.userId, conversationId);
   }
 }

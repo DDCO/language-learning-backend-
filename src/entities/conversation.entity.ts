@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, Index } from 'typeorm';
 import { User } from './user.entity';
 import { UserProfile } from './user-profile.entity';
 
@@ -9,6 +9,7 @@ export interface Message {
 }
 
 @Entity('conversations')
+@Index(['status', 'startedAt'])
 export class Conversation {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

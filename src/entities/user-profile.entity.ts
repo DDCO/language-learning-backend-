@@ -1,8 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, Index } from 'typeorm';
 import { User } from './user.entity';
 import { Conversation } from './conversation.entity';
 
 @Entity('user_profiles')
+@Index(['isActive', 'checkFrequencyHours'])
 export class UserProfile {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

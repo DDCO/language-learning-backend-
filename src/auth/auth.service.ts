@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../entities/user.entity';
+import * as bcrypt from 'bcryptjs';
 
 type GoogleProfile = {
   id: string;
@@ -21,7 +22,7 @@ export class AuthService {
   async validateGoogleUser(profile: GoogleProfile): Promise<User> {
     const email = profile.emails?.[0]?.value?.toLowerCase();
     if (!email) {
-      throw new Error('Google profile did not include an email address');
+      throw new UnauthorizedException('Google profile did not include an email address');
     }
 
     let user = await this.usersRepository.findOne({
@@ -43,10 +44,69 @@ export class AuthService {
     return this.usersRepository.save(user);
   }
 
-  createJwt(user: User): string {
+  private createAccessToken(user: User): string {
     return this.jwtService.sign({
       sub: user.id,
       email: user.email,
     });
+  }
+
+  private createRefreshToken(user: User): string {
+    return this.jwtService.sign(
+      {
+        sub: user.id,
+        email: user.email,
+        type: 'refresh',
+      },
+      {
+        secret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'your-secret-key-here',
+        expiresIn: (process.env.JWT_REFRESH_EXPIRATION || '30d') as any,
+      },
+    );
+  }
+
+  async issueTokens(user: User): Promise<{ accessToken: string; refreshToken: string }> {
+    const accessToken = this.createAccessToken(user);
+    const refreshToken = this.createRefreshToken(user);
+    user.refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+    await this.usersRepository.save(user);
+    return { accessToken, refreshToken };
+  }
+
+  async refreshTokens(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+    let payload: { sub: string; type?: string };
+    try {
+      payload = this.jwtService.verify(refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'your-secret-key-here',
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    if (payload.type !== 'refresh') {
+      throw new UnauthorizedException('Invalid refresh token type');
+    }
+
+    const user = await this.usersRepository.findOne({ where: { id: payload.sub } });
+    if (!user || !user.refreshTokenHash) {
+      throw new UnauthorizedException('Refresh token not recognized');
+    }
+
+    const isValid = await bcrypt.compare(refreshToken, user.refreshTokenHash);
+    if (!isValid) {
+      throw new UnauthorizedException('Refresh token mismatch');
+    }
+
+    return this.issueTokens(user);
+  }
+
+  async logout(userId: string): Promise<{ loggedOut: boolean }> {
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    user.refreshTokenHash = null;
+    await this.usersRepository.save(user);
+    return { loggedOut: true };
   }
 }

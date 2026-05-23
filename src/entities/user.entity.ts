@@ -16,6 +16,9 @@ export class User {
   @Column({ unique: true, nullable: true })
   googleId!: string | null;
 
+  @Column({ nullable: true })
+  refreshTokenHash!: string | null;
+
   @Column()
   firstName!: string;
 

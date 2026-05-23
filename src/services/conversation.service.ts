@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Conversation, Message } from '../entities/conversation.entity';
@@ -55,16 +55,17 @@ export class ConversationService {
    * Add a user message to a conversation and get AI response
    */
   async addMessage(
+    userId: string,
     conversationId: string,
     userMessage: string,
     targetLanguage: string,
   ): Promise<Conversation> {
     const conversation = await this.conversationRepo.findOne({
-      where: { id: conversationId },
+      where: { id: conversationId, user: { id: userId } },
     });
 
     if (!conversation) {
-      throw new Error('Conversation not found');
+      throw new NotFoundException('Conversation not found');
     }
 
     // Add user message
@@ -105,23 +106,32 @@ Respond only in ${targetLanguage}.`;
   /**
    * Get all conversations for a user
    */
-  async getUserConversations(userId: string): Promise<Conversation[]> {
-    return this.conversationRepo.find({
-      where: { user: { id: userId } },
+  async getUserConversations(
+    userId: string,
+    page = 1,
+    limit = 20,
+    status?: 'active' | 'completed' | 'archived',
+  ): Promise<{ items: Conversation[]; total: number; page: number; limit: number }> {
+    const [items, total] = await this.conversationRepo.findAndCount({
+      where: { user: { id: userId }, ...(status ? { status } : {}) },
       order: { startedAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
+
+    return { items, total, page, limit };
   }
 
   /**
    * Get a specific conversation
    */
-  async getConversation(conversationId: string): Promise<Conversation> {
+  async getConversation(userId: string, conversationId: string): Promise<Conversation> {
     const conversation = await this.conversationRepo.findOne({
-      where: { id: conversationId },
+      where: { id: conversationId, user: { id: userId } },
     });
 
     if (!conversation) {
-      throw new Error('Conversation not found');
+      throw new NotFoundException('Conversation not found');
     }
 
     return conversation;
@@ -130,13 +140,13 @@ Respond only in ${targetLanguage}.`;
   /**
    * Mark conversation as completed
    */
-  async completeConversation(conversationId: string): Promise<Conversation> {
+  async completeConversation(userId: string, conversationId: string): Promise<Conversation> {
     const conversation = await this.conversationRepo.findOne({
-      where: { id: conversationId },
+      where: { id: conversationId, user: { id: userId } },
     });
 
     if (!conversation) {
-      throw new Error('Conversation not found');
+      throw new NotFoundException('Conversation not found');
     }
 
     conversation.status = 'completed';

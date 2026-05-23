@@ -1,6 +1,7 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
+import { RefreshTokenDto } from '../dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -15,9 +16,10 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthCallback(@Req() req: { user: any }) {
-    const token = this.authService.createJwt(req.user);
+    const tokens = await this.authService.issueTokens(req.user);
     return {
-      access_token: token,
+      access_token: tokens.accessToken,
+      refresh_token: tokens.refreshToken,
       token_type: 'Bearer',
       user: {
         id: req.user.id,
@@ -32,5 +34,16 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt'))
   getProfile(@Req() req: { user: any }) {
     return req.user;
+  }
+
+  @Post('refresh')
+  refresh(@Body() body: RefreshTokenDto) {
+    return this.authService.refreshTokens(body.refreshToken);
+  }
+
+  @Post('logout')
+  @UseGuards(AuthGuard('jwt'))
+  logout(@Req() req: { user: { userId: string } }) {
+    return this.authService.logout(req.user.userId);
   }
 }

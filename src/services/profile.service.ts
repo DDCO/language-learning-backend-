@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserProfile } from '../entities/user-profile.entity';
@@ -33,7 +33,7 @@ export class ProfileService {
     const { interestWeights } = dto;
     
     if (interests.length === 0) {
-      throw new Error('At least one interest/topic is required');
+      throw new ForbiddenException('At least one interest/topic is required');
     }
 
     // If no weights provided, distribute equally
@@ -63,17 +63,18 @@ export class ProfileService {
    * Update profile interests
    */
   async updateInterests(
+    userId: string,
     profileId: string,
     interests: string[],
     weights?: number[],
     topicSources?: TopicSourceSelection[],
   ): Promise<UserProfile> {
     const profile = await this.profileRepo.findOne({
-      where: { id: profileId },
+      where: { id: profileId, user: { id: userId }, isActive: true },
     });
 
     if (!profile) {
-      throw new Error('Profile not found');
+      throw new NotFoundException('Profile not found');
     }
 
     const sourceTopics = await this.topicSourceService.resolveTopics(topicSources);
@@ -81,7 +82,7 @@ export class ProfileService {
 
     profile.interests = mergedInterests;
     if (mergedInterests.length === 0) {
-      throw new Error('At least one interest/topic is required');
+      throw new ForbiddenException('At least one interest/topic is required');
     }
 
     profile.interestWeights = weights || mergedInterests.map(() => 1 / mergedInterests.length);
@@ -94,15 +95,16 @@ export class ProfileService {
    * Update check frequency
    */
   async updateCheckFrequency(
+    userId: string,
     profileId: string,
     hours: number,
   ): Promise<UserProfile> {
     const profile = await this.profileRepo.findOne({
-      where: { id: profileId },
+      where: { id: profileId, user: { id: userId }, isActive: true },
     });
 
     if (!profile) {
-      throw new Error('Profile not found');
+      throw new NotFoundException('Profile not found');
     }
 
     profile.checkFrequencyHours = Math.max(1, hours);
@@ -114,13 +116,13 @@ export class ProfileService {
   /**
    * Deactivate profile
    */
-  async deactivateProfile(profileId: string): Promise<UserProfile> {
+  async deactivateProfile(userId: string, profileId: string): Promise<UserProfile> {
     const profile = await this.profileRepo.findOne({
-      where: { id: profileId },
+      where: { id: profileId, user: { id: userId }, isActive: true },
     });
 
     if (!profile) {
-      throw new Error('Profile not found');
+      throw new NotFoundException('Profile not found');
     }
 
     profile.isActive = false;

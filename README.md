@@ -34,6 +34,11 @@ npm run build
 npm start
 ```
 
+API base path: `/v1`
+
+Swagger docs:
+- `/v1/docs`
+
 ## Architecture
 
 ### Core Components
@@ -87,8 +92,12 @@ npm start
 - `LLM_PROVIDER` - Currently supports: `openai`
 - `OPENAI_API_KEY`, `OPENAI_MODEL`
 - `JWT_SECRET`, `JWT_EXPIRATION`
+- `JWT_REFRESH_SECRET`, `JWT_REFRESH_EXPIRATION`
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`
 - `REDDIT_DEFAULT_SUBREDDITS` (comma-separated, e.g. `languagelearning,technology,worldnews`)
+- `REDDIT_FETCH_LIMIT`, `REDDIT_USER_AGENT`
+- `ENABLE_CONTENT_REFRESH`
+- `TYPEORM_SYNCHRONIZE`, `TYPEORM_RUN_MIGRATIONS`
 - `PORT` - Server port (default: 3000)
 - `NODE_ENV` - `development` or `production`
 
@@ -113,6 +122,34 @@ Resolved topics from Reddit are normalized as `reddit:r/<subreddit>` and merged 
 ## Google OAuth (JWT)
 
 Endpoints:
-- `GET /auth/google` - Starts Google OAuth flow
-- `GET /auth/google/callback` - Returns `{ access_token, token_type, user }`
-- `GET /auth/me` - Protected route using `Authorization: Bearer <token>`
+- `GET /v1/auth/google` - Starts Google OAuth flow
+- `GET /v1/auth/google/callback` - Returns access + refresh tokens
+- `GET /v1/auth/me` - Protected route using `Authorization: Bearer <token>`
+- `POST /v1/auth/refresh` - Refresh access token
+- `POST /v1/auth/logout` - Revoke refresh token
+
+## Profile and Conversation APIs (Android)
+
+All require JWT bearer token.
+
+Profiles:
+- `POST /v1/profiles`
+- `GET /v1/profiles`
+- `PATCH /v1/profiles/:id/interests`
+- `PATCH /v1/profiles/:id/check-frequency`
+- `DELETE /v1/profiles/:id`
+
+Conversations:
+- `POST /v1/conversations/start`
+- `POST /v1/conversations/:id/messages`
+- `GET /v1/conversations?page=1&limit=20&status=active`
+- `GET /v1/conversations/:id`
+- `PATCH /v1/conversations/:id/complete`
+
+## Periodic Content Refresh
+
+When `ENABLE_CONTENT_REFRESH=true`, a background job runs every 10 minutes and fetches Reddit posts for interests starting with `reddit:r/`, then saves new content rows.
+
+## Migrations
+
+A migration scaffold exists in `src/migrations`. Keep synchronize off (`TYPEORM_SYNCHRONIZE=false`) outside local prototyping.

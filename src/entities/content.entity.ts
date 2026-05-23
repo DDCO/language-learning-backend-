@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 
 
 @Entity('content')
 @Index(['url'], { unique: true })
-@Index(['interest', 'createdAt'])
+@Index(['interest', 'discoveredAt'])
 export class Content {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

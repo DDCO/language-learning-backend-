@@ -13,26 +13,21 @@ export interface ScrapedContent {
 @Injectable()
 export class ScraperService {
   private readonly delayMs = parseInt(process.env.SCRAPING_DELAY_MS || '1000');
+  private readonly redditLimit = parseInt(process.env.REDDIT_FETCH_LIMIT || '10');
+  private readonly userAgent = process.env.REDDIT_USER_AGENT || 'language-learning-backend/1.0';
 
   /**
    * Scrape content from a news source based on interest
    */
   async scrapeByInterest(interest: string): Promise<ScrapedContent[]> {
-    // This is a placeholder - real implementation would:
-    // 1. Route to appropriate scrapers based on interest
-    // 2. Parse relevant news sources
-    // 3. Extract content and deduplicate
-    
     const results: ScrapedContent[] = [];
     
     try {
-      // Example: sports interest -> ESPN, others
-      if (interest.toLowerCase() === 'sports') {
-        // results = await this.scrapeESPN();
-      } else if (interest.toLowerCase() === 'politics') {
-        // results = await this.scrapeBBC();
+      if (interest.startsWith('reddit:r/')) {
+        const subreddit = interest.replace('reddit:r/', '');
+        const redditResults = await this.scrapeRedditSubreddit(subreddit);
+        results.push(...redditResults.map((item) => ({ ...item, interest })));
       }
-      // Add more mappings as needed
       
       await this.delay(this.delayMs);
     } catch (error) {
@@ -41,6 +36,42 @@ export class ScraperService {
     }
 
     return results;
+  }
+
+  async scrapeRedditSubreddit(subreddit: string): Promise<ScrapedContent[]> {
+    const cleanSubreddit = subreddit.replace(/^r\//i, '').trim();
+    if (!cleanSubreddit) {
+      return [];
+    }
+
+    try {
+      const response = await axios.get(`https://www.reddit.com/r/${cleanSubreddit}/hot.json`, {
+        params: { limit: this.redditLimit },
+        headers: {
+          'User-Agent': this.userAgent,
+        },
+        timeout: 10000,
+      });
+
+      const posts = response.data?.data?.children || [];
+      const content: ScrapedContent[] = posts
+        .map((child: any) => child?.data)
+        .filter((post: any) => post?.title && post?.permalink)
+        .map((post: any) => ({
+          title: post.title,
+          url: `https://www.reddit.com${post.permalink}`,
+          summary: post.selftext?.slice(0, 500) || post.title,
+          source: `reddit:r/${cleanSubreddit}`,
+          publishedAt: post.created_utc ? new Date(post.created_utc * 1000) : undefined,
+        }));
+
+      await this.delay(this.delayMs);
+      return content;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Error scraping reddit r/${cleanSubreddit}:`, message);
+      return [];
+    }
   }
 
   /**

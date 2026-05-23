@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProfileService, CreateProfileDTO } from '../services/profile.service';
-import { TopicSourceSelection } from '../topic-sources/topic-source.interface';
+import { CreateProfileDto, UpdateCheckFrequencyDto, UpdateInterestsDto } from '../dto/profile.dto';
 
 type AuthenticatedRequest = {
   user: {
@@ -18,9 +18,9 @@ export class ProfileController {
   @Post()
   createProfile(
     @Req() req: AuthenticatedRequest,
-    @Body() body: CreateProfileDTO,
+    @Body() body: CreateProfileDto,
   ) {
-    return this.profileService.createProfile(req.user.userId, body);
+    return this.profileService.createProfile(req.user.userId, body as CreateProfileDTO);
   }
 
   @Get()
@@ -30,10 +30,12 @@ export class ProfileController {
 
   @Patch(':id/interests')
   updateInterests(
+    @Req() req: AuthenticatedRequest,
     @Param('id') profileId: string,
-    @Body() body: { interests: string[]; weights?: number[]; topicSources?: TopicSourceSelection[] },
+    @Body() body: UpdateInterestsDto,
   ) {
     return this.profileService.updateInterests(
+      req.user.userId,
       profileId,
       body.interests,
       body.weights,
@@ -43,14 +45,15 @@ export class ProfileController {
 
   @Patch(':id/check-frequency')
   updateCheckFrequency(
+    @Req() req: AuthenticatedRequest,
     @Param('id') profileId: string,
-    @Body() body: { hours: number },
+    @Body() body: UpdateCheckFrequencyDto,
   ) {
-    return this.profileService.updateCheckFrequency(profileId, body.hours);
+    return this.profileService.updateCheckFrequency(req.user.userId, profileId, body.hours);
   }
 
   @Delete(':id')
-  deactivateProfile(@Param('id') profileId: string) {
-    return this.profileService.deactivateProfile(profileId);
+  deactivateProfile(@Req() req: AuthenticatedRequest, @Param('id') profileId: string) {
+    return this.profileService.deactivateProfile(req.user.userId, profileId);
   }
 }
