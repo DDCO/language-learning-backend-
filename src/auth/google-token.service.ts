@@ -6,14 +6,23 @@ export class GoogleTokenService {
   private client = new OAuth2Client();
 
   async verifyIdToken(idToken: string) {
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    if (!clientId) {
-      throw new UnauthorizedException('GOOGLE_CLIENT_ID is not set');
+    const audiences = [
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_ANDROID_CLIENT_ID,
+      process.env.GOOGLE_IOS_CLIENT_ID,
+      ...(process.env.GOOGLE_CLIENT_IDS || '')
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ].filter(Boolean) as string[];
+
+    if (!audiences.length) {
+      throw new UnauthorizedException('Google OAuth audience is not configured');
     }
 
     const ticket = await this.client.verifyIdToken({
       idToken,
-      audience: clientId,
+      audience: audiences,
     });
 
     const payload = ticket.getPayload();
