@@ -20,10 +20,15 @@ export class GoogleTokenService {
       throw new UnauthorizedException('Google OAuth audience is not configured');
     }
 
-    const ticket = await this.client.verifyIdToken({
-      idToken,
-      audience: audiences,
-    });
+    let ticket;
+    try {
+      ticket = await this.client.verifyIdToken({
+        idToken,
+        audience: audiences,
+      });
+    } catch (error: any) {
+      throw new UnauthorizedException(error?.message || 'Invalid Google ID token');
+    }
 
     const payload = ticket.getPayload();
     if (!payload?.sub || !payload?.email) {
