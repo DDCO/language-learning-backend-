@@ -10,6 +10,14 @@ import { GoogleStrategy } from './google.strategy';
 import { JwtStrategy } from './jwt.strategy';
 import { GoogleTokenService } from './google-token.service';
 
+function safeJwtExpiresIn(value: string | undefined, fallback: string): string {
+  const candidate = (value || '').trim();
+  if (!candidate) return fallback;
+  if (/^\d+$/.test(candidate)) return candidate;
+  if (/^\d+\s*(ms|s|m|h|d|w|y)$/i.test(candidate)) return candidate.replace(/\s+/g, '');
+  return fallback;
+}
+
 @Module({
   imports: [
     ConfigModule,
@@ -21,7 +29,7 @@ import { GoogleTokenService } from './google-token.service';
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET', 'your-secret-key-here'),
         signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRATION', '7d') as any,
+          expiresIn: safeJwtExpiresIn(configService.get<string>('JWT_EXPIRATION'), '7d') as any,
         },
       }),
     }),

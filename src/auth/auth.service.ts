@@ -11,6 +11,14 @@ type GoogleProfile = {
   name?: { givenName?: string; familyName?: string };
 };
 
+function safeJwtExpiresIn(value: string | undefined, fallback: string): string {
+  const candidate = (value || '').trim();
+  if (!candidate) return fallback;
+  if (/^\d+$/.test(candidate)) return candidate;
+  if (/^\d+\s*(ms|s|m|h|d|w|y)$/i.test(candidate)) return candidate.replace(/\s+/g, '');
+  return fallback;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -60,7 +68,7 @@ export class AuthService {
       },
       {
         secret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'your-secret-key-here',
-        expiresIn: (process.env.JWT_REFRESH_EXPIRATION || '30d') as any,
+        expiresIn: safeJwtExpiresIn(process.env.JWT_REFRESH_EXPIRATION, '30d') as any,
       },
     );
   }
